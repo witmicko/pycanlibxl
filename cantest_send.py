@@ -3,7 +3,7 @@
 # To change this template, choose Tools | Templates
 # and open the template in the editor.
 
-__author__="uid14026"
+__author__="mapl"
 __date__ ="$03.03.2010 08:50:02$"
 
 import canlib_xl
