@@ -8,9 +8,13 @@ XLaccess=XLuint64
 XLstatus=ctypes.c_short
 XLporthandle=ctypes.c_long
 
+XL_HWTYPE_ANY=-1
 XL_HWTYPE_NONE=0
 XL_ACTIVATE_RESET_CLOCK=8
+XL_HWTYPE_VIRTUAL=1
 XL_HWTYPE_CANCARDXL=15
+XL_HWTYPE_CANCASEXL=21
+XL_HWTYPE_CANBOARDXL=25
 
 XL_BUS_TYPE_NONE=0
 XL_BUS_TYPE_CAN=1
@@ -46,6 +50,10 @@ XL_LIN_CRCINFO              =26
 #// for D/A IO bus
 XL_RECEIVE_DAIO_DATA        =32
 
+#//defines for xlGetDriverConfig structures
+XL_MAX_LENGTH=31
+XL_CONFIG_MAX_CHANNELS=64
+
 class s_xl_can_msg(ctypes.Structure):
     _fields_ = [("id", ctypes.c_ulong),
                 ("flags", ctypes.c_ushort),
@@ -68,7 +76,7 @@ class s_xl_lin_wake_up(ctypes.Structure):
     _fields_ = [("flag", ctypes.c_ubyte)]
 
 class s_xl_lin_no_ans(ctypes.Structure):
-    _fields_ = [("id", ctypes.c_ubyte)]    #
+    _fields_ = [("id", ctypes.c_ubyte)]
 
 class s_xl_lin_sleep(ctypes.Structure):
     _fields_ = [("flag", ctypes.c_ubyte)]
@@ -126,6 +134,62 @@ class s_xl_event(ctypes.Structure):
                 ("tagData", s_xl_tag_data)]
 
 XLevent=s_xl_event
+
+class XLbusParams_can(ctypes.Structure):
+    _fields_ =[("bitRate",ctypes.c_uint),
+               ("sjw",ctypes.c_ubyte),
+               ("tseg1",ctypes.c_ubyte),
+               ("tseg2",ctypes.c_ubyte),
+               ("sam",ctypes.c_ubyte),
+               ("outputMode",ctypes.c_ubyte),
+               ("padding",ctypes.c_ubyte*23)]
+
+class XLbusParams(ctypes.Structure):
+    _fields_ =[("busType",ctypes.c_uint),
+               ("can",XLbusParams_can)]
+
+class s_xl_channel_config(ctypes.Structure):
+    _pack_ = 1
+    _fields_ =[("name",ctypes.c_char*(XL_MAX_LENGTH+1)),
+               ("hwType",ctypes.c_ubyte),
+               ("hwIndex",ctypes.c_ubyte),
+               ("hwChannel",ctypes.c_ubyte),
+               ("transceiverType",ctypes.c_ushort),
+               ("transceiverState",ctypes.c_uint),
+               ("channelIndex",ctypes.c_ubyte),
+               ("channelMask",XLuint64),
+               ("channelCapabilities",ctypes.c_uint),
+               ("channelBusCapabilities",ctypes.c_uint),
+               ("isOnBus",ctypes.c_ubyte),
+               ("connectedBusType",ctypes.c_uint),
+               ("busParams",XLbusParams),
+               ("driverVersion",ctypes.c_uint),
+               ("interfaceVersion",ctypes.c_uint),
+               ("raw_data",ctypes.c_uint*10),
+               ("serialNumber",ctypes.c_uint),
+               ("articleNumber",ctypes.c_uint),
+               ("transceiverName",ctypes.c_char*(XL_MAX_LENGTH+1)),
+               ("specialCabFlags",ctypes.c_uint),
+               ("dominantTimeout",ctypes.c_uint),
+               ("dominantRecessiveDelay",ctypes.c_ubyte),
+               ("recessiveDominantDelay",ctypes.c_ubyte),
+               ("connectionInfo",ctypes.c_ubyte),
+               ("currentlyAvailableTimestamps",ctypes.c_ubyte),
+               ("minimalSupplyVoltage",ctypes.c_ushort),
+               ("maximalSupplyVoltage",ctypes.c_ushort),
+               ("maximalBaudrate",ctypes.c_uint),
+               ("fpgaCoreCapabilities",ctypes.c_ubyte),
+               ("specialDeviceStatus",ctypes.c_ubyte),
+               ("channelBusActiveCapabilities",ctypes.c_ushort),
+               ("breakOffset",ctypes.c_ushort),
+               ("delimiterOffset",ctypes.c_ushort),
+               ("reserved",ctypes.c_uint*3)]
+
+class s_xl_driver_config(ctypes.Structure):
+    _fields_ =[ ("dllVersion",ctypes.c_uint),
+                ("channelCount",ctypes.c_uint),
+                ("reserved",ctypes.c_uint*10),
+                ("channel",s_xl_channel_config*XL_CONFIG_MAX_CHANNELS)]
 
 class candriver():
 
@@ -217,6 +281,11 @@ class candriver():
         err_string=self.candll.xlGetErrorString(err)
         return err_string
 
+    def get_driver_config(self, pDriverConfig):
+        self.candll.xlGetDriverConfig.argtypes=[ctypes.POINTER(s_xl_driver_config)]
+        ok=self.candll.xlGetDriverConfig(ctypes.byref(pDriverConfig))
+        return ok
+
 class can_api():
     def __init__(self):
         self.driver=candriver()
@@ -260,4 +329,7 @@ class can_api():
             rec_string=self.driver.get_event_string(event_list)
         return rec_string
     
-
+    def get_driver_info(self):
+        p=s_xl_driver_config()
+        self.driver.get_driver_config(p)
+        return p
