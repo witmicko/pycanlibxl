@@ -46,11 +46,17 @@ if __name__ == "__main__":
         if msvcrt.kbhit():
             loop=0
         ok=1
-        while (ok):
+        try_n=0
+        while (ok and try_n<3):
             time.sleep(0.1)
+            #cycle time 100 ms
             event_count=ctypes.c_uint(1)
             ok=can.can_transmit(phandle, mask, event_count, event_msg)
-            print ok, event_msg
+            #ok=1 if sending was successful
+            if try_n > 0:
+                print "retry",
+            print "code", ok, "msg", event_msg
+            try_n+=1
 
 
         #print ok, event_count, event_list
