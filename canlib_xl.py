@@ -28,6 +28,7 @@ XL_ACTIVATE_RESET_CLOCK=8
 
 XLeventtag=ctypes.c_ubyte
 MAX_MSG_LEN=8
+MAX_BUF_SIZE=10
 
 XL_NO_COMMAND               = 0
 XL_RECEIVE_MSG              = 1
@@ -134,6 +135,7 @@ class s_xl_event(ctypes.Structure):
                 ("tagData", s_xl_tag_data)]
 
 XLevent=s_xl_event
+array_XLevent=(MAX_BUF_SIZE*XLevent)
 
 class XLbusParams_can(ctypes.Structure):
     _fields_ =[("bitRate",ctypes.c_uint),
@@ -253,6 +255,18 @@ class candriver():
 
     def receive(self, port_handle, event_count, event_list):
         self.candll.xlReceive.argtypes=[XLporthandle, ctypes.POINTER(ctypes.c_uint), ctypes.POINTER(XLevent)]
+        #ev=XLevent(0)
+        #print port_handle, event_count, event_list
+        ok=self.candll.xlReceive(port_handle, ctypes.byref(event_count), ctypes.byref(event_list))
+        #print event_list
+        return ok
+
+    def receive_multiple_msgs(self, port_handle, event_count, event_list):
+        #print event_count, MAX_BUF_SIZE
+        max_buf_size=ctypes.c_uint(MAX_BUF_SIZE)
+        #print event_count, max_buf_size
+        #assert(event_count<= max_buf_size)
+        self.candll.xlReceive.argtypes=[XLporthandle, ctypes.POINTER(ctypes.c_uint), ctypes.POINTER(array_XLevent)]
         #ev=XLevent(0)
         #print port_handle, event_count, event_list
         ok=self.candll.xlReceive(port_handle, ctypes.byref(event_count), ctypes.byref(event_list))
