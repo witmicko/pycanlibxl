@@ -1,0 +1,1 @@
+A library wrapper for the vector xl-canlib. It connects the vector informatik vxlapi.dll to python. For running the examples a cancard and a cancab (from vector) are necessary. The dll is only available under windows, so windows is needed.
